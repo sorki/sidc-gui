@@ -9,7 +9,7 @@ EVT_RESULT_ID = wx.NewId()
 
 class ResultEvent(wx.PyEvent):
     ''' Event to carry arbitrary payload '''
-    def __init__(self, data=(None,None)):
+    def __init__(self, data):
         super(ResultEvent, self).__init__()
         self.SetEventType(EVT_RESULT_ID)
         self.data = data
@@ -30,7 +30,7 @@ class WxThread(threading.Thread):
     def run(self):
         raise NotImplemented
 
-    def result(self, data):
+    def result(self, data=(None,None)):
         wx.PostEvent(self._notify_window, ResultEvent(data))
 
     def abort(self):

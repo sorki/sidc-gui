@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+DATETIME_FORMAT = '%a %d %B %Y %H:%M:%S %Z'
 
 import logging
 from logging import config as logging_cfg
@@ -7,6 +8,7 @@ logging_cfg.fileConfig('logging.conf')
 logging.debug('Entry')
 
 
+import datetime
 import numpy as npy
 
 import wxversion
@@ -110,22 +112,25 @@ class SidcUI(wx.App):
         logging.debug('wx Logger set')
 
         # get pannels
-        self.config = xrc.XRCCTRL(self.frame, 'config')
-        self.console = xrc.XRCCTRL(self.frame, 'console')
-        self.status = xrc.XRCCTRL(self.frame, 'status')
-        self.live = xrc.XRCCTRL(self.frame, 'live')
+        self.p_config = xrc.XRCCTRL(self.frame, 'config')
+        self.p_console = xrc.XRCCTRL(self.frame, 'console')
+        self.p_status = xrc.XRCCTRL(self.frame, 'status')
+        self.p_live = xrc.XRCCTRL(self.frame, 'live')
 
         # bind menu items
         self.Bind(wx.EVT_MENU, self.on_exit, id=xrc.XRCID('menu_exit'))
         self.Bind(wx.EVT_MENU,
-            paply(self.toggle, self.config),
+            paply(self.toggle, self.p_config),
             id=xrc.XRCID('menu_config'))
         self.Bind(wx.EVT_MENU,
-            paply(self.toggle, self.console),
+            paply(self.toggle, self.p_console),
             id=xrc.XRCID('menu_console'))
         self.frame.GetMenuBar().Check(xrc.XRCID('menu_console'), True)
         self.frame.GetMenuBar().Check(xrc.XRCID('menu_config'), False)
 
+        # bind buttons
+        self.Bind(wx.EVT_BUTTON, self.update_status,
+            id=xrc.XRCID('status_update'))
 
         # live container
         plot_container = xrc.XRCCTRL(self.frame,"chart_panel")
@@ -172,8 +177,27 @@ class SidcUI(wx.App):
             self.cfg_list.SetColumnWidth(1, -1)
 
         if self.status is not None:
-            pass
+            xrc.XRCCTRL(self.p_status, 'status_c').SetLabel('Running')
+            started = self.status['create_datetime']
+            uptime = datetime.datetime.now() - started
+            hours, remainder = divmod(uptime.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            days, hours = divmod(hours, 24)
 
+            uptime_fmt = '%d:%02d:%02d' % (hours, minutes, seconds)
+            if days != 0:
+                uptime_fmt = '%d days %d:%02d:%02d' % (days, hours,
+                    minutes, seconds)
+
+            xrc.XRCCTRL(self.p_status, 'uptime_c').SetLabel(uptime_fmt)
+            xrc.XRCCTRL(self.p_status, 'start_c').SetLabel(
+                started.strftime(DATETIME_FORMAT))
+
+            self.p_status.Show()
+
+
+    def update_status(self, event=None):
+        self.worker = InfoThread(self, self.on_info_result)
 
 
     def on_cfg_list_click(self, event=None):
