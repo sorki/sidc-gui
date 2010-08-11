@@ -1,0 +1,191 @@
+#!/usr/bin/env python
+
+
+import logging
+from logging import config as logging_cfg
+logging_cfg.fileConfig('logging.conf')
+logging.debug('Entry')
+
+
+import numpy as npy
+
+import wxversion
+wxversion.ensureMinimal('2.8')
+import wx
+import wx.xrc as xrc
+
+import matplotlib
+matplotlib.use('WXAgg')
+import matplotlib.cm as cm
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
+from matplotlib.backends.backend_wx import NavigationToolbar2Wx
+
+
+from core.handler import WxLogger
+from core.threads import InfoThread
+from utils.functional import paply
+
+ERR_TOL = 1e-5 # floating point slop for peak-detection
+
+
+matplotlib.rc('image', origin='lower')
+
+class PlotPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+
+        self.fig = Figure((5,4), 75)
+        self.canvas = FigureCanvasWxAgg(self, -1, self.fig)
+#        self.toolbar = Toolbar(self.canvas) #matplotlib toolbar
+        self.toolbar = NavigationToolbar2Wx(self.canvas) #matplotlib toolbar
+        self.toolbar.Realize()
+        #self.toolbar.set_active([0,1])
+
+        # Now put all into a sizer
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        # This way of adding to sizer allows resizing
+        sizer.Add(self.canvas, 1, wx.LEFT|wx.TOP|wx.GROW)
+        # Best to allow the toolbar to resize!
+        sizer.Add(self.toolbar, 0, wx.GROW)
+        self.SetSizer(sizer)
+        self.Fit()
+
+    def init_plot_data(self):
+        a = self.fig.add_subplot(111)
+        x = npy.arange(120.0)*2*npy.pi/60.0
+        y = npy.arange(100.0)*2*npy.pi/50.0
+        self.x, self.y = npy.meshgrid(x, y)
+        z = npy.sin(self.x) + npy.cos(self.y)
+        self.im = a.imshow( z, cmap=cm.jet, interpolation='nearest')
+
+        zmax = npy.amax(z) - ERR_TOL
+        ymax_i, xmax_i = npy.nonzero(z >= zmax)
+        if self.im.origin == 'upper':
+            ymax_i = z.shape[0]-ymax_i
+        self.lines = a.plot(xmax_i,ymax_i,'ko')
+
+        self.toolbar.update() # Not sure why this is needed - ADS
+
+    def GetToolBar(self):
+        return self.toolbar
+
+    def OnWhiz(self,evt):
+        self.x += npy.pi/15
+        self.y += npy.pi/20
+        z = npy.sin(self.x) + npy.cos(self.y)
+        self.im.set_array(z)
+
+        zmax = npy.amax(z) - ERR_TOL
+        ymax_i, xmax_i = npy.nonzero(z >= zmax)
+        if self.im.origin == 'upper':
+            ymax_i = z.shape[0]-ymax_i
+        self.lines[0].set_data(xmax_i,ymax_i)
+
+        self.canvas.draw()
+
+    def onEraseBackground(self, evt):
+        # this is supposed to prevent redraw flicker on some X servers...
+        pass
+
+class SidcUI(wx.App):
+    def OnInit(self):
+        logging.debug('wx Init')
+        xrc_file = 'xrc/app.xrc'
+        logging.debug('Loading xrc - %s' % xrc_file)
+
+        self.res = xrc.XmlResource(xrc_file)
+        logging.debug('Xrc loaded')
+
+        self.frame = self.res.LoadFrame(None,"main_frame")
+        self.frame.Show(1)
+
+        # wx logger
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        handler = WxLogger(xrc.XRCCTRL(self.frame, 'console_textarea'))
+        handler.setFormatter(formatter)
+        logging.getLogger().addHandler(handler)
+
+        logging.debug('wx Logger set')
+
+        # get pannels
+        self.config = xrc.XRCCTRL(self.frame, 'config')
+        self.console = xrc.XRCCTRL(self.frame, 'console')
+        self.status = xrc.XRCCTRL(self.frame, 'status')
+        self.live = xrc.XRCCTRL(self.frame, 'live')
+
+        # bind menu items
+        self.Bind(wx.EVT_MENU, self.on_exit, id=xrc.XRCID('menu_exit'))
+        self.Bind(wx.EVT_MENU,
+            paply(self.toggle, self.config),
+            id=xrc.XRCID('menu_config'))
+        self.Bind(wx.EVT_MENU,
+            paply(self.toggle, self.console),
+            id=xrc.XRCID('menu_console'))
+        self.frame.GetMenuBar().Check(xrc.XRCID('menu_console'), True)
+        self.frame.GetMenuBar().Check(xrc.XRCID('menu_config'), False)
+
+
+        # live container
+        plot_container = xrc.XRCCTRL(self.frame,"chart_panel")
+
+        self.plotpanel = PlotPanel(plot_container)
+        self.plotpanel.init_plot_data()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.plotpanel, 1, wx.EXPAND)
+        plot_container.SetSizer(sizer)
+
+        self.cfg_list = xrc.XRCCTRL(self.frame, 'config_list')
+        self.cfg_list.InsertColumn(0, 'Option')
+        self.cfg_list.InsertColumn(1, 'Value')
+        self.cfg_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_cfg_list_click)
+
+        self.SetTopWindow(self.frame)
+
+        logging.debug('wx Init done')
+        logging.debug('Starting info thread')
+        self.worker = InfoThread(self, self.on_info_result)
+
+
+        logging.debug('Init done')
+        return True
+
+    def on_exit(self, event=None):
+        self.frame.Destroy()
+
+    def on_info_result(self, event):
+        logging.debug('Info received')
+
+        self.config = event.data
+        if event.data is not None:
+            self.cfg_list.DeleteAllItems()
+            # sort
+
+            for (key,val) in sorted(event.data.iteritems(), key=lambda x: x[0]):
+                logging.debug('%s = %s' % (repr(key), repr(val)))
+                self.cfg_list.Append([key+' '*10, val])
+
+            self.cfg_list.SetColumnWidth(0, -1)
+            self.cfg_list.SetColumnWidth(1, -1)
+
+
+    def on_cfg_list_click(self, event=None):
+        key = event.GetItem().GetText().strip()
+        value = self.cfg_list.GetItem(event.GetIndex(), 1).GetText()
+        xrc.XRCCTRL(self.frame, 'config_key').SetValue(key)
+        xrc.XRCCTRL(self.frame, 'config_value').SetValue(value)
+
+    def toggle(self, to_toggle, event):
+        if event.Checked():
+            to_toggle.Show()
+        else:
+            to_toggle.Hide()
+
+if __name__ == '__main__':
+    app = SidcUI(0)
+    app.MainLoop()
+
+# button bind
+#        self.Bind(wx.EVT_BUTTON, self.on_exit, id=xrc.XRCID('btn_ok'))
