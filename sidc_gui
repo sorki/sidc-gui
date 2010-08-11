@@ -99,41 +99,42 @@ class SidcUI(wx.App):
         self.res = xrc.XmlResource(xrc_file)
         logging.debug('Xrc loaded')
 
-        self.frame = self.res.LoadFrame(None,"main_frame")
+        self.frame = self.res.LoadFrame(None, 'main_frame')
         self.frame.Show(1)
 
         # wx logger
         formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        handler = WxLogger(xrc.XRCCTRL(self.frame, 'console_textarea'))
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler = WxLogger(self.get('console_textarea'))
         handler.setFormatter(formatter)
         logging.getLogger().addHandler(handler)
 
         logging.debug('wx Logger set')
 
         # get pannels
-        self.p_config = xrc.XRCCTRL(self.frame, 'config')
-        self.p_console = xrc.XRCCTRL(self.frame, 'console')
-        self.p_status = xrc.XRCCTRL(self.frame, 'status')
-        self.p_live = xrc.XRCCTRL(self.frame, 'live')
+        self.p_config = self.get('config')
+        self.p_console = self.get('console')
+        self.p_status = self.get('status')
+        self.p_live = self.get('live')
 
         # bind menu items
-        self.Bind(wx.EVT_MENU, self.on_exit, id=xrc.XRCID('menu_exit'))
-        self.Bind(wx.EVT_MENU,
-            paply(self.toggle, self.p_config),
-            id=xrc.XRCID('menu_config'))
-        self.Bind(wx.EVT_MENU,
-            paply(self.toggle, self.p_console),
-            id=xrc.XRCID('menu_console'))
-        self.frame.GetMenuBar().Check(xrc.XRCID('menu_console'), True)
-        self.frame.GetMenuBar().Check(xrc.XRCID('menu_config'), False)
+        def bind_menu(menu_id, fn):
+            self.Bind(wx.EVT_MENU, fn, id=self.getid('menu_'+menu_id))
+
+        bind_menu('exit', self.on_exit)
+        bind_menu('config', paply(self.toggle, self.p_config))
+        bind_menu('console', paply(self.toggle, self.p_console))
+
+        self.frame.GetMenuBar().Check(self.getid('menu_console'), True)
+        self.frame.GetMenuBar().Check(self.getid('menu_config'), False)
 
         # bind buttons
-        self.Bind(wx.EVT_BUTTON, self.update_status,
-            id=xrc.XRCID('status_update'))
+        def bind_btn(btnid, fn):
+            self.Bind(wx.EVT_BUTTON, fn, id=self.getid(btnid))
+        bind_btn('status_update', self.update_status)
 
         # live container
-        plot_container = xrc.XRCCTRL(self.frame,"chart_panel")
+        plot_container = self.get('chart_panel')
 
         self.plotpanel = PlotPanel(plot_container)
         self.plotpanel.init_plot_data()
@@ -142,7 +143,7 @@ class SidcUI(wx.App):
         sizer.Add(self.plotpanel, 1, wx.EXPAND)
         plot_container.SetSizer(sizer)
 
-        self.cfg_list = xrc.XRCCTRL(self.frame, 'config_list')
+        self.cfg_list = self.get('config_list')
         self.cfg_list.InsertColumn(0, 'Option')
         self.cfg_list.InsertColumn(1, 'Value')
         self.cfg_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_cfg_list_click)
@@ -165,6 +166,8 @@ class SidcUI(wx.App):
 
         self.status = event.data[0]
         self.config = event.data[1]
+
+
         if self.config is not None:
             self.cfg_list.DeleteAllItems()
             # sort
@@ -177,7 +180,7 @@ class SidcUI(wx.App):
             self.cfg_list.SetColumnWidth(1, -1)
 
         if self.status is not None:
-            xrc.XRCCTRL(self.p_status, 'status_c').SetLabel('Running')
+            self.get('status_c').SetLabel('Running')
             started = self.status['create_datetime']
             uptime = datetime.datetime.now() - started
             hours, remainder = divmod(uptime.seconds, 3600)
@@ -189,11 +192,15 @@ class SidcUI(wx.App):
                 uptime_fmt = '%d days %d:%02d:%02d' % (days, hours,
                     minutes, seconds)
 
-            xrc.XRCCTRL(self.p_status, 'uptime_c').SetLabel(uptime_fmt)
-            xrc.XRCCTRL(self.p_status, 'start_c').SetLabel(
-                started.strftime(DATETIME_FORMAT))
+            self.get('uptime_c').SetLabel(uptime_fmt)
+            self.get('start_c').SetLabel(started.strftime(DATETIME_FORMAT))
 
-            self.p_status.Show()
+        else:
+            self.get('status_c').SetLabel('Not running')
+            self.get('uptime_c').SetLabel('')
+            self.get('start_c').SetLabel('')
+
+        self.p_status.Show()
 
 
     def update_status(self, event=None):
@@ -203,14 +210,22 @@ class SidcUI(wx.App):
     def on_cfg_list_click(self, event=None):
         key = event.GetItem().GetText().strip()
         value = self.cfg_list.GetItem(event.GetIndex(), 1).GetText()
-        xrc.XRCCTRL(self.frame, 'config_key').SetValue(key)
-        xrc.XRCCTRL(self.frame, 'config_value').SetValue(value)
+        self.get('config_key').SetValue(key)
+        self.get('config_value').SetValue(value)
 
     def toggle(self, to_toggle, event):
         if event.Checked():
             to_toggle.Show()
         else:
             to_toggle.Hide()
+
+    def get(self, xrc_name):
+        return xrc.XRCCTRL(self.frame, xrc_name)
+
+    def getid(self, xrc_id):
+        return xrc.XRCID(xrc_id)
+
+
 
 if __name__ == '__main__':
     app = SidcUI(0)
