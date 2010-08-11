@@ -155,15 +155,16 @@ class SidcUI(wx.App):
     def on_exit(self, event=None):
         self.frame.Destroy()
 
-    def on_info_result(self, event):
+    def on_info_result(self, event=None):
         logging.debug('Info received')
 
-        self.config = event.data
-        if event.data is not None:
+        self.status = event.data[0]
+        self.config = event.data[1]
+        if self.config is not None:
             self.cfg_list.DeleteAllItems()
             # sort
 
-            for (key,val) in sorted(event.data.iteritems(), key=lambda x: x[0]):
+            for (key,val) in sorted(self.config.iteritems(), key=lambda x: x[0]):
                 logging.debug('%s = %s' % (repr(key), repr(val)))
                 self.cfg_list.Append([key+' '*10, val])
 
