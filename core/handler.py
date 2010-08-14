@@ -1,3 +1,4 @@
+import wx
 import logging
 
 class WxLogger(logging.Handler):
@@ -17,5 +18,6 @@ class WxLogger(logging.Handler):
         self.textarea = textarea
 
     def emit(self, record):
-        self.textarea.AppendText(self.format(record) + '\n')
+        # thread safe append
+        wx.CallAfter(self.textarea.AppendText, self.format(record) + '\n')
 
