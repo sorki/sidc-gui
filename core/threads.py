@@ -125,3 +125,52 @@ class InfoThread(WxThread):
         self.result((sidc_status, cfg))
         return
 
+class LoadThread(WxThread):
+    def configure(self, file, progress_bar=None):
+        self.file = file
+        if progress_bar is not None:
+            self.progress_bar = progress_bar
+
+    def run(self):
+        logging.info('Loading %s' % self.file)
+        if not os.access(self.file, os.R_OK):
+            logging.error('Not enough permissions to read %s', self.file)
+            return
+
+        fh = open(self.file, 'r')
+        size = os.path.getsize(self.file)
+        resolution = 0.05
+        step = 1
+        logging.debug('File size: %d b' % size)
+        # TODO (minor): file header is optional, support?
+        header = fh.readline()
+        red = float(len(header))
+
+
+        header = header.split()
+        # stamp lpeak rpeak lrms rrms ..BANDS..
+        times = []
+        data = {}
+        mappings = {}
+        for index, data_type in enumerate(header[1:]):
+            logging.debug('Found data type: %s' % data_type)
+            mappings[index] = data_type
+            data[data_type] = []
+
+        logging.debug(mappings)
+        logging.debug(data_type)
+
+
+        while True:
+            line = fh.readline()
+            if not line:
+                fh.close()
+                break
+            red += len(line)
+
+            perc = red/size
+            if(perc>resolution*step):
+                step += 1
+                logging.debug('Load progress %s' % perc)
+
+        logging.debug('Load done')

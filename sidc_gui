@@ -25,7 +25,7 @@ from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
 
 from core.handler import WxLogger
-from core.threads import InfoThread
+from core.threads import InfoThread, LoadThread
 from utils.functional import paply
 
 ERR_TOL = 1e-5 # floating point slop for peak-detection
@@ -107,7 +107,7 @@ class SidcUI(wx.App):
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler = WxLogger(self.get('console_textarea'))
         handler.setFormatter(formatter)
-        logging.getLogger().addHandler(handler)
+        #logging.getLogger().addHandler(handler)
 
         logging.debug('wx Logger set')
 
@@ -122,6 +122,7 @@ class SidcUI(wx.App):
             self.Bind(wx.EVT_MENU, fn, id=self.getid('menu_'+menu_id))
 
         bind_menu('exit', self.on_exit)
+        bind_menu('load', self.on_load)
         bind_menu('config', paply(self.toggle, self.p_config))
         bind_menu('console', paply(self.toggle, self.p_console))
 
@@ -131,7 +132,7 @@ class SidcUI(wx.App):
         # bind buttons
         def bind_btn(btnid, fn):
             self.Bind(wx.EVT_BUTTON, fn, id=self.getid(btnid))
-        bind_btn('status_update', self.update_status)
+        bind_btn('status_update', self.run_info_thread)
 
         # live container
         plot_container = self.get('chart_panel')
@@ -152,7 +153,7 @@ class SidcUI(wx.App):
 
         logging.debug('wx Init done')
         logging.debug('Starting info thread')
-        self.worker = InfoThread(self, self.on_info_result)
+        self.run_info_thread()
 
 
         logging.debug('Init done')
@@ -160,6 +161,21 @@ class SidcUI(wx.App):
 
     def on_exit(self, event=None):
         self.frame.Destroy()
+
+    def on_load(self, event=None):
+        self.thread_load = LoadThread(self, self.on_load_result, False)
+        dlg = wx.FileDialog(self.frame, "Open a file", style=wx.OPEN)
+        dlg.SetWildcard("Sidc data files (.dat)|*.dat|All files (*.*)|*.*")
+        if dlg.ShowModal() == wx.ID_OK:
+            self.thread_load.configure(dlg.GetPath())
+            self.thread_load.start()
+        dlg.Destroy()
+
+    def on_load_result(self, event=None):
+        pass
+
+    def run_info_thread(self, event=None):
+        self.thread_info = InfoThread(self, self.on_info_result)
 
     def on_info_result(self, event=None):
         logging.debug('Info received')
@@ -203,8 +219,6 @@ class SidcUI(wx.App):
         self.p_status.Show()
 
 
-    def update_status(self, event=None):
-        self.worker = InfoThread(self, self.on_info_result)
 
 
     def on_cfg_list_click(self, event=None):
