@@ -107,7 +107,7 @@ class SidcUI(wx.App):
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler = WxLogger(self.get('console_textarea'))
         handler.setFormatter(formatter)
-        #logging.getLogger().addHandler(handler)
+        logging.getLogger().addHandler(handler)
 
         logging.debug('wx Logger set')
 

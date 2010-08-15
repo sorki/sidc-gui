@@ -126,26 +126,28 @@ class InfoThread(WxThread):
         return
 
 class LoadThread(WxThread):
-    def configure(self, file, progress_bar=None):
-        self.file = file
-        if progress_bar is not None:
-            self.progress_bar = progress_bar
+    progress_resolution = 0.05
+
+
+    def configure(self, filename, progress_fn=None):
+        self.filename = filename
+        if progress_fn is None:
+            self.progress_fn = self.default_progress_fn
 
     def run(self):
-        logging.info('Loading %s' % self.file)
-        if not os.access(self.file, os.R_OK):
-            logging.error('Not enough permissions to read %s', self.file)
+        logging.info('Loading %s' % self.filename)
+        if not os.access(self.filename, os.R_OK):
+            logging.error('Not enough permissions to read %s', self.filename)
             return
 
-        fh = open(self.file, 'r')
-        size = os.path.getsize(self.file)
-        resolution = 0.05
+        fh = open(self.filename, 'r')
+        size = os.path.getsize(self.filename)
+        resolution = self.progress_resolution
         step = 1
         logging.debug('File size: %d b' % size)
         # TODO (minor): file header is optional, support?
         header = fh.readline()
         red = float(len(header))
-
 
         header = header.split()
         # stamp lpeak rpeak lrms rrms ..BANDS..
@@ -157,10 +159,6 @@ class LoadThread(WxThread):
             mappings[index] = data_type
             data[data_type] = []
 
-        logging.debug(mappings)
-        logging.debug(data_type)
-
-
         while True:
             line = fh.readline()
             if not line:
@@ -168,9 +166,18 @@ class LoadThread(WxThread):
                 break
             red += len(line)
 
+            data_row = line.split()
+            times.append(float(data_row.pop(0)))
+            for index, data_val in enumerate(data_row):
+                data[mappings[index]].append(float(data_val))
+
             perc = red/size
             if(perc>resolution*step):
                 step += 1
-                logging.debug('Load progress %s' % perc)
+                if self.progress_fn is not None:
+                    self.progress_fn(red, size, perc)
 
         logging.debug('Load done')
+
+    def default_progress_fn(self, red, total, perc):
+        logging.debug('Load progress %s' % perc)
