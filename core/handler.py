@@ -13,7 +13,7 @@ class WxLogger(logging.Handler):
             raise TypeError('textarea of WxLogger is None')
         if not hasattr(textarea, 'AppendText'):
             raise AttributeError('object passed to WxLogger as textarea'+
-                'has no attribute \'AppendText\'')
+                ' has no attribute \'AppendText\'')
 
         self.textarea = textarea
 

@@ -14,7 +14,7 @@ import numpy as npy
 import wxversion
 wxversion.ensureMinimal('2.8')
 import wx
-import wx.xrc as xrc
+#import wx.xrc as xrc
 
 import matplotlib
 matplotlib.use('WXAgg')
@@ -26,6 +26,7 @@ from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
 from core.handler import WxLogger
 from core.threads import InfoThread, LoadThread
+from utils import xrc
 from utils.functional import paply
 
 ERR_TOL = 1e-5 # floating point slop for peak-detection
@@ -96,7 +97,8 @@ class SidcUI(wx.App):
         xrc_file = 'xrc/app.xrc'
         logging.debug('Loading xrc - %s' % xrc_file)
 
-        self.res = xrc.XmlResource(xrc_file)
+        #self.res = xrc.XmlResource(xrc_file)
+        self.res = xrc.load(xrc_file)
         logging.debug('Xrc loaded')
 
         self.frame = self.res.LoadFrame(None, 'main_frame')
@@ -157,6 +159,14 @@ class SidcUI(wx.App):
 
 
         logging.debug('Init done')
+
+        import pdb
+        #pdb.set_trace()
+        l = self.get('_loaded')
+        tb = self.get('tablist')
+        tb.AddPage(l, 'Buheh')
+
+
         return True
 
     def on_exit(self, event=None):
@@ -234,16 +244,13 @@ class SidcUI(wx.App):
             to_toggle.Hide()
 
     def get(self, xrc_name):
-        return xrc.XRCCTRL(self.frame, xrc_name)
+        return xrc.get(xrc_name, self.frame)
 
     def getid(self, xrc_id):
-        return xrc.XRCID(xrc_id)
+        return xrc.get(xrc_id)
 
 
 
 if __name__ == '__main__':
     app = SidcUI(0)
     app.MainLoop()
-
-# button bind
-#        self.Bind(wx.EVT_BUTTON, self.on_exit, id=xrc.XRCID('btn_ok'))
