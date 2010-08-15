@@ -130,6 +130,7 @@ class LoadThread(WxThread):
 
 
     def configure(self, filename, progress_fn=None):
+        # progress_fn must be thread safe!
         self.filename = filename
         if progress_fn is None:
             self.progress_fn = self.default_progress_fn

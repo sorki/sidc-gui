@@ -26,8 +26,8 @@ from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
 from core.handler import WxLogger
 from core.threads import InfoThread, LoadThread
-from utils import xrc
-from utils.functional import paply
+from core.utils import xrc
+from core.utils.functional import paply
 
 ERR_TOL = 1e-5 # floating point slop for peak-detection
 
@@ -160,17 +160,10 @@ class SidcUI(wx.App):
 
         logging.debug('Init done')
 
-        import pdb
-        #pdb.set_trace()
-        l = self.get('_loaded')
-        tb = self.get('tablist')
-        tb.AddPage(l, 'Buheh')
-
-
         return True
 
     def on_exit(self, event=None):
-        self.frame.Destroy()
+        self.frame.Close(True)
 
     def on_load(self, event=None):
         self.thread_load = LoadThread(self, self.on_load_result, False)
@@ -248,7 +241,6 @@ class SidcUI(wx.App):
 
     def getid(self, xrc_id):
         return xrc.get(xrc_id)
-
 
 
 if __name__ == '__main__':
