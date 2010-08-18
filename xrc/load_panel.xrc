@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resource version="2.3.0.1">
+  <object class="wxPanel" name="Loaded" subclass="sidc_gui.core.elements.LoadPanel">
+    <style>wxTAB_TRAVERSAL</style>
+    <object class="wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxEXPAND|wxADJUST_MINSIZE</flag>
+        <object class="wxPanel" name="load_progress">
+          <style>wxTAB_TRAVERSAL</style>
+          <object class="wxBoxSizer">
+            <orient>wxVERTICAL</orient>
+            <object class="sizeritem">
+              <option>1</option>
+              <flag>wxALL|wxEXPAND|wxADJUST_MINSIZE</flag>
+              <border>30</border>
+              <object class="wxGauge" name="progress_gauge">
+                <style>wxGA_HORIZONTAL|wxGA_SMOOTH</style>
+                <range>100</range>
+              </object>
+            </object>
+            <object class="sizeritem">
+              <option>1</option>
+              <flag>wxEXPAND</flag>
+              <object class="wxBoxSizer">
+                <orient>wxHORIZONTAL</orient>
+                <object class="sizeritem">
+                  <option>1</option>
+                  <flag>wxEXPAND</flag>
+                  <object class="wxPanel" name="progress_inner_panel">
+                    <style>wxTAB_TRAVERSAL</style>
+                  </object>
+                </object>
+                <object class="sizeritem">
+                  <flag>wxRIGHT|wxADJUST_MINSIZE</flag>
+                  <border>35</border>
+                  <object class="wxButton" name="btn_load_cancel">
+                    <label>Cancel</label>
+                  </object>
+                </object>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <option>1</option>
+        <flag>wxEXPAND</flag>
+        <object class="wxPanel" name="load_panel">
+          <style>wxTAB_TRAVERSAL</style>
+          <object class="wxBoxSizer">
+            <orient>wxHORIZONTAL</orient>
+            <object class="sizeritem">
+              <option>1</option>
+              <flag>wxEXPAND</flag>
+              <object class="wxPanel" name="chart_panel">
+                <style>wxTAB_TRAVERSAL</style>
+              </object>
+            </object>
+          
+			</object>
+        </object>
+      </object>
+    </object>
+  </object>
+</resource>
