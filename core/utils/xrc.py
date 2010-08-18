@@ -2,17 +2,22 @@
 
 import os
 import wx.xrc as xrc
+import logging
 
 xrc_cache = {}
 
 def load(filepath):
+    logging.debug('Loading xrc - %s' % filepath)
     filepath = os.path.abspath(filepath)
     if reload or (filepath not in xrc_cache):
+        logging.debug('Fetching xrc from file')
         result = xrc.XmlResource(filepath)
         xrc_cache[filepath] = result
     else:
+        logging.debug('Fetching xrc from cache')
         result = xrc_cache[filepath]
 
+    logging.debug('Xrc loaded')
     return result
 
 def get(id_or_name, scope=None):

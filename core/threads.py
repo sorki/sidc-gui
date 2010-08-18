@@ -126,7 +126,7 @@ class InfoThread(WxThread):
         return
 
 class LoadThread(WxThread):
-    progress_resolution = 0.05
+    progress_resolution = 0.01
 
 
     def configure(self, filename, progress_fn=None):
@@ -134,11 +134,14 @@ class LoadThread(WxThread):
         self.filename = filename
         if progress_fn is None:
             self.progress_fn = self.default_progress_fn
+        else:
+            self.progress_fn = progress_fn
 
     def run(self):
         logging.info('Loading %s' % self.filename)
         if not os.access(self.filename, os.R_OK):
             logging.error('Not enough permissions to read %s', self.filename)
+            self.result(None)
             return
 
         fh = open(self.filename, 'r')
@@ -166,6 +169,9 @@ class LoadThread(WxThread):
                 fh.close()
                 break
             red += len(line)
+            if self._want_abort == 1:
+                self.result(None)
+                return
 
             data_row = line.split()
             times.append(float(data_row.pop(0)))
@@ -178,7 +184,13 @@ class LoadThread(WxThread):
                 if self.progress_fn is not None:
                     self.progress_fn(red, size, perc)
 
+        if self.progress_fn is not None:
+            self.progress_fn(red, size, 1)
         logging.debug('Load done')
+        data['times'] = times
+        self.result(data)
+        return
 
-    def default_progress_fn(self, red, total, perc):
-        logging.debug('Load progress %s' % perc)
+    def default_progress_fn(self, red, total, perc, wxgauge=None):
+        if wxgauge is not None:
+            wx.CallAfter(wxgauge.SetValue, int(perc*100))

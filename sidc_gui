@@ -2,6 +2,8 @@
 
 DATETIME_FORMAT = '%a %d %B %Y %H:%M:%S %Z'
 
+import os
+
 import logging
 from logging import config as logging_cfg
 logging_cfg.fileConfig('logging.conf')
@@ -14,95 +16,31 @@ import numpy as npy
 import wxversion
 wxversion.ensureMinimal('2.8')
 import wx
-#import wx.xrc as xrc
-
-import matplotlib
-matplotlib.use('WXAgg')
-import matplotlib.cm as cm
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
-
+'''
+'''
 
 from core.handler import WxLogger
-from core.threads import InfoThread, LoadThread
+# TODO (minor): let Status panel use info thread
+from core.threads import InfoThread
 from core.utils import xrc
 from core.utils.functional import paply
-
+from core.elements import build_tab
+'''
 ERR_TOL = 1e-5 # floating point slop for peak-detection
 
 
 matplotlib.rc('image', origin='lower')
 
-class PlotPanel(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent, -1)
-
-        self.fig = Figure((5,4), 75)
-        self.canvas = FigureCanvasWxAgg(self, -1, self.fig)
-#        self.toolbar = Toolbar(self.canvas) #matplotlib toolbar
-        self.toolbar = NavigationToolbar2Wx(self.canvas) #matplotlib toolbar
-        self.toolbar.Realize()
-        #self.toolbar.set_active([0,1])
-
-        # Now put all into a sizer
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        # This way of adding to sizer allows resizing
-        sizer.Add(self.canvas, 1, wx.LEFT|wx.TOP|wx.GROW)
-        # Best to allow the toolbar to resize!
-        sizer.Add(self.toolbar, 0, wx.GROW)
-        self.SetSizer(sizer)
-        self.Fit()
-
-    def init_plot_data(self):
-        a = self.fig.add_subplot(111)
-        x = npy.arange(120.0)*2*npy.pi/60.0
-        y = npy.arange(100.0)*2*npy.pi/50.0
-        self.x, self.y = npy.meshgrid(x, y)
-        z = npy.sin(self.x) + npy.cos(self.y)
-        self.im = a.imshow( z, cmap=cm.jet, interpolation='nearest')
-
-        zmax = npy.amax(z) - ERR_TOL
-        ymax_i, xmax_i = npy.nonzero(z >= zmax)
-        if self.im.origin == 'upper':
-            ymax_i = z.shape[0]-ymax_i
-        self.lines = a.plot(xmax_i,ymax_i,'ko')
-
-        self.toolbar.update() # Not sure why this is needed - ADS
-
-    def GetToolBar(self):
-        return self.toolbar
-
-    def OnWhiz(self,evt):
-        self.x += npy.pi/15
-        self.y += npy.pi/20
-        z = npy.sin(self.x) + npy.cos(self.y)
-        self.im.set_array(z)
-
-        zmax = npy.amax(z) - ERR_TOL
-        ymax_i, xmax_i = npy.nonzero(z >= zmax)
-        if self.im.origin == 'upper':
-            ymax_i = z.shape[0]-ymax_i
-        self.lines[0].set_data(xmax_i,ymax_i)
-
-        self.canvas.draw()
-
-    def onEraseBackground(self, evt):
-        # this is supposed to prevent redraw flicker on some X servers...
-        pass
-
+'''
 class SidcUI(wx.App):
     def OnInit(self):
         logging.debug('wx Init')
         xrc_file = 'xrc/app.xrc'
-        logging.debug('Loading xrc - %s' % xrc_file)
 
-        #self.res = xrc.XmlResource(xrc_file)
         self.res = xrc.load(xrc_file)
-        logging.debug('Xrc loaded')
 
         self.frame = self.res.LoadFrame(None, 'main_frame')
-        self.frame.Show(1)
+        self.frame.Show(True)
 
         # wx logger
         formatter = logging.Formatter(
@@ -113,6 +51,7 @@ class SidcUI(wx.App):
 
         logging.debug('wx Logger set')
 
+        self.ts = self.get('tablist')
         # get pannels
         self.p_config = self.get('config')
         self.p_console = self.get('console')
@@ -136,16 +75,6 @@ class SidcUI(wx.App):
             self.Bind(wx.EVT_BUTTON, fn, id=self.getid(btnid))
         bind_btn('status_update', self.run_info_thread)
 
-        # live container
-        plot_container = self.get('chart_panel')
-
-        self.plotpanel = PlotPanel(plot_container)
-        self.plotpanel.init_plot_data()
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.plotpanel, 1, wx.EXPAND)
-        plot_container.SetSizer(sizer)
-
         self.cfg_list = self.get('config_list')
         self.cfg_list.InsertColumn(0, 'Option')
         self.cfg_list.InsertColumn(1, 'Value')
@@ -155,27 +84,24 @@ class SidcUI(wx.App):
 
         logging.debug('wx Init done')
         logging.debug('Starting info thread')
-        self.run_info_thread()
+        #self.run_info_thread()
 
+        self.ts.AddPage(build_tab(self.ts, './s.dat'),
+            's.dat', True)
 
         logging.debug('Init done')
-
         return True
 
     def on_exit(self, event=None):
         self.frame.Close(True)
 
     def on_load(self, event=None):
-        self.thread_load = LoadThread(self, self.on_load_result, False)
         dlg = wx.FileDialog(self.frame, "Open a file", style=wx.OPEN)
         dlg.SetWildcard("Sidc data files (.dat)|*.dat|All files (*.*)|*.*")
         if dlg.ShowModal() == wx.ID_OK:
-            self.thread_load.configure(dlg.GetPath())
-            self.thread_load.start()
+            self.ts.AddPage(build_tab(self.ts, dlg.GetPath()),
+                os.path.basename(dlg.GetPath()), True)
         dlg.Destroy()
-
-    def on_load_result(self, event=None):
-        pass
 
     def run_info_thread(self, event=None):
         self.thread_info = InfoThread(self, self.on_info_result)
