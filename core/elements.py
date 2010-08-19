@@ -125,8 +125,9 @@ class PlotPanel(wx.Panel):
         self.axes.grid(True, color='gray')
 
         self.axes.set_title(self.title, size=12)
-        self.axes.set_xlabel('Time')
-        self.axes.set_ylabel('Value')
+        self.axes.set_xlabel('Time', labelpad=20)
+        # TODO (major): dB???
+        self.axes.set_ylabel('Signal strength', labelpad=20)
 
 
         def format_date(x, pos=None):
@@ -222,10 +223,23 @@ class PlotPanel(wx.Panel):
 
     def plot(self, which):
         line = self.axes.plot(self.data['times'], self.data[which])[0]
+#            marker='|', markerfacecolor='red')[0]
         setattr(self, which, line)
         self.redraw()
 
     def redraw(self):
+        # update legend
+        handles = []
+        dtypes = []
+        for dtype in self.data.keys():
+            if hasattr(self, dtype):
+                handles.append(getattr(self, dtype))
+                dtypes.append(dtype)
+
+        self.fig.legends = []
+        if len(handles) != 0:
+            self.fig.legend(handles, dtypes, 'right')
+        # redraw
         self.canvas.draw()
 
     def GetToolBar(self):
