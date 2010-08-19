@@ -174,7 +174,8 @@ class LoadThread(WxThread):
                 return
 
             data_row = line.split()
-            times.append(float(data_row.pop(0)))
+            times.append(
+                datetime.datetime.fromtimestamp(float(data_row.pop(0))))
             for index, data_val in enumerate(data_row):
                 data[mappings[index]].append(float(data_val))
 
