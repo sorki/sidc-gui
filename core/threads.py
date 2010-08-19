@@ -158,10 +158,12 @@ class LoadThread(WxThread):
         times = []
         data = {}
         mappings = {}
+        bounds = {}
         for index, data_type in enumerate(header[1:]):
             logging.debug('Found data type: %s' % data_type)
             mappings[index] = data_type
             data[data_type] = []
+            bounds[data_type] = (9999999, -9999999)
 
         while True:
             line = fh.readline()
@@ -177,7 +179,12 @@ class LoadThread(WxThread):
             times.append(
                 datetime.datetime.fromtimestamp(float(data_row.pop(0))))
             for index, data_val in enumerate(data_row):
-                data[mappings[index]].append(float(data_val))
+                val = float(data_val)
+                data[mappings[index]].append(val)
+                dtmin = min(val, bounds[mappings[index]][0])
+                dtmax = max(val, bounds[mappings[index]][1])
+                bounds[mappings[index]] = (dtmin, dtmax)
+
 
             perc = red/size
             if(perc>resolution*step):
@@ -189,6 +196,7 @@ class LoadThread(WxThread):
             self.progress_fn(red, size, 1)
         logging.debug('Load done')
         data['times'] = times
+        data['bounds'] = bounds
         self.result(data)
         return
 

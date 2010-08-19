@@ -1,3 +1,4 @@
+import os
 import wx
 import logging
 
@@ -5,13 +6,12 @@ from utils import xrc
 from utils.functional import paply
 from threads import LoadThread
 
-import matplotlib
-matplotlib.use('WXAgg')
-import matplotlib.cm as cm
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
+import matplotlib.dates as dates
+import matplotlib.ticker as ticker
 
 
 def build_tab(parent, filepath):
@@ -32,6 +32,7 @@ class LoadPanel(wx.Panel):
 
    
     def configure(self, parent, filepath):
+        self.filepath = filepath
         self.parent = parent
         # Init panel controls
 
@@ -69,15 +70,9 @@ class LoadPanel(wx.Panel):
     def plot(self, data):
         xrc.get('load_progress', self).Hide()
         chart = xrc.get('chart_panel', self)
-        self.plot = PlotPanel(chart, data)
-        self.plot.init_plot()
-
-        #self.plot.plot('DCF')
-        '''
-        self.plot.plot(data, 'lrms')
-        self.plot.plot(data, 'NRK')
-        self.plot.plot(data, 'FTA')
-        '''
+        # TODO (major): parse date from filename according to config or guess format
+        title = os.path.basename(self.filepath)
+        self.plot = PlotPanel(chart, data, title)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.plot, 1, wx.EXPAND)
@@ -88,12 +83,14 @@ class LoadPanel(wx.Panel):
 
 
 class PlotPanel(wx.Panel):
-    def __init__(self, parent, data):
+    def __init__(self, parent, data, title):
         wx.Panel.__init__(self, parent, -1)
 
         self.data = data
+        self.title = title
         self.fig = Figure((3.0,3.0), dpi=100)
         self.canvas = FigureCanvasWxAgg(self, -1, self.fig)
+        # TODO (minor): exact value according to mouse position 
         '''
         http://matplotlib.sourceforge.net/users/event_handling.html
 
@@ -104,10 +101,10 @@ class PlotPanel(wx.Panel):
 
         self.canvas.mpl_connect('motion_notify_event', onmove)
         '''
-        self.toolbar = NavigationToolbar2Wx(self.canvas) #matplotlib toolbar
+        self.toolbar = NavigationToolbar2Wx(self.canvas)
         self.toolbar.Realize()
-        #self.toolbar.set_active([0,1])
         self.init_controls()
+        self.init_plot()
 
         self.lcol = wx.BoxSizer(wx.VERTICAL)
         self.lcol.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
@@ -127,46 +124,32 @@ class PlotPanel(wx.Panel):
         self.axes.set_axis_bgcolor('black')
         self.axes.grid(True, color='gray')
 
-#        self.axes.xaxis_date()
-#        self.axes.set_xlabel('Datetime')
-#        self.axes.set_xbound(lower=self.data['times'][0],
-#            upper=self.data['times'][-1])
+        self.axes.set_title(self.title, size=12)
+        self.axes.set_xlabel('Time')
+        self.axes.set_ylabel('Value')
 
 
-        #self.axes.set_title('Sid data', size=12)
-
-        '''
-        self.plot_data = self.axes.plot(range(100), linewidth=1,
-            color=(1,1,0))[0]
-
-        self.plot_data2 = self.axes.plot(range(50), linewidth=1,
-            color=(0,1,0))[0]
-        '''
-        '''
-        self.axes.xaxis.set_major_locator(dates.DayLocator())
-        self.axes.xaxis.set_major_formatter(dates.DateFormatter('%d'))
-        #ax.xaxis.set_minor_locator(months)
-        self.axes.format_xdata = dates.DateFormatter('%d')
-        '''
         def format_date(x, pos=None):
-            logging.debug(x)
-            return x.strftime('%Y-%d')
+            dt = dates.num2date(x)
+            main = dt.strftime('%H:%M:%S.')#dates.DateFormatter('%H:%M:%S:%f'))
+            zeros_missing = 6-len(str(dt.microsecond))
+            flo = float(".%s%d" % (zeros_missing*"0", dt.microsecond))
+            return main + ('%.03f' % round(flo,3))[2:]
 
-        #self.axes.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
-        #lc = dates.AutoDateLocator()
-        import matplotlib.dates as dates
-        import matplotlib.ticker as ticker
         self.axes.xaxis.set_major_locator(ticker.LinearLocator())
-        self.axes.xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S:%f'))
+        self.axes.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
         self.axes.xaxis.set_minor_locator(ticker.LinearLocator())
-        self.axes.format_xdata = dates.DateFormatter('%H:%M:%S')
+        # unused
+        #self.axes.format_xdata = dates.DateFormatter('%H:%M:%S')
         self.fig.autofmt_xdate()
 
 
-        self.plot('DCF')
-        #self.axes.set_autoscale_on(False)
-        self.axes.set_xlim(lower=self.data['times'][0],
-            upper=self.data['times'][-1])
+        self.plot(self.first_dtype)
+
+        self.axes.set_autoscale_on(False)
+        self.autoscale = False
+
+        self.rescale()
         self.toolbar.update()
 
     def init_controls(self):
@@ -174,30 +157,56 @@ class PlotPanel(wx.Panel):
         csizer = wx.BoxSizer(wx.VERTICAL)
         dtypes = self.data.keys()
         dtypes.sort()
+        fst = True
+        add = paply(csizer.Add, border=5, flag=wx.ALL)
+        add_cb = paply(csizer.Add, border=5, flag=wx.LEFT|wx.RIGHT)
+
+        label = wx.StaticText(self.controls, label='Bands:')
+        add(label)
+
         for dtype in dtypes:
-            if dtype != 'times':
+            if dtype != 'times' and dtype != 'bounds':
                 cbox = wx.CheckBox(self.controls, label=dtype)
-                csizer.Add(cbox)
+                if fst:
+                    fst = False
+                    self.first_dtype = dtype
+                    cbox.SetValue(True)
+                add_cb(cbox)
                 self.Bind(wx.EVT_CHECKBOX, paply(self.on_band, dtype), cbox)
         btn = wx.Button(self.controls, -1, label='Re-scale')
-        csizer.Add(btn)
-        self.Bind(wx.EVT_BUTTON, self.on_scale, btn)
+        add(btn)
+        self.Bind(wx.EVT_BUTTON, self.rescale, btn)
+
+        auto = wx.CheckBox(self.controls, label='Autoscale')
+        add_cb(auto)
+        self.Bind(wx.EVT_CHECKBOX, self.on_autoscale, auto)
         self.controls.SetSizer(csizer)
 
-    def on_scale(self, event=None):
-        logging.debug('rescale')
-        #self.axes.set_autoscale_on(True)
-        #self.axes.autoscale_view()#scalex=False)
-        ymin = min(self.data['DCF'])
-        ymax = max(self.data['DCF'])
-        self.axes.set_ybound(lower=ymin, upper=ymax)
+    def rescale(self, event=None):
+        ymin = 99999
+        ymax = -ymin
+        for dtype in self.data.keys():
+            if hasattr(self, dtype):
+                ymin = min(ymin, self.data['bounds'][dtype][0])
+                ymax = max(ymax, self.data['bounds'][dtype][1])
+
+        # 1% spacing
+        corr = (ymax - ymin)/100
+        self.axes.set_ybound(lower=ymin-corr, upper=ymax+corr)
         self.redraw()
+
+    def on_autoscale(self, event=None):
+        if event is not None:
+            obj = event.GetEventObject()
+            self.autoscale = obj.IsChecked()
 
     def on_band(self, which, event=None):
         if event is not None:
             obj = event.GetEventObject()
             if obj.IsChecked():
                 self.plot(which)
+                if self.autoscale:
+                    self.rescale()
             else:
                 line = getattr(self, which)
                 for index, _line in enumerate(self.axes.lines):
@@ -205,10 +214,12 @@ class PlotPanel(wx.Panel):
                         break
 
                 self.axes.lines.pop(index)
+                delattr(self, which)
+                if self.autoscale:
+                    self.rescale()
                 self.redraw()
 
 
-            
     def plot(self, which):
         line = self.axes.plot(self.data['times'], self.data[which])[0]
         setattr(self, which, line)

@@ -2,36 +2,30 @@
 
 DATETIME_FORMAT = '%a %d %B %Y %H:%M:%S %Z'
 
+# python, logging
 import os
-
+import datetime
 import logging
 from logging import config as logging_cfg
 logging_cfg.fileConfig('logging.conf')
 logging.debug('Entry')
 
 
-import datetime
-import numpy as npy
-
+# matplotlib + wx
+import matplotlib
+matplotlib.use('WXAgg')
 import wxversion
 wxversion.ensureMinimal('2.8')
 import wx
-'''
-'''
 
+# application core
 from core.handler import WxLogger
 # TODO (minor): let Status panel use info thread
 from core.threads import InfoThread
 from core.utils import xrc
 from core.utils.functional import paply
 from core.elements import build_tab
-'''
-ERR_TOL = 1e-5 # floating point slop for peak-detection
 
-
-matplotlib.rc('image', origin='lower')
-
-'''
 class SidcUI(wx.App):
     def OnInit(self):
         logging.debug('wx Init')
