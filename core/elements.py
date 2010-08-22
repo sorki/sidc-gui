@@ -139,7 +139,13 @@ class PlotPanel(wx.Panel):
 
         self.axes.xaxis.set_major_locator(ticker.LinearLocator())
         self.axes.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
-        self.axes.xaxis.set_minor_locator(ticker.LinearLocator())
+        #self.axes.xaxis.set_minor_locator(ticker.LinearLocator())
+#        self.axes.yaxis.set_major_locator(ticker.MultipleLocator(1))
+#        self.axes.yaxis.set_minor_locator(ticker.MultipleLocator(.5))
+        self.axes.yaxis.set_major_locator(ticker.AutoLocator())
+#        self.axes.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+        #self.axes.yaxis.set_minor_locator(ticker.MultipleLocator(dx_minor))
+
         # unused
         #self.axes.format_xdata = dates.DateFormatter('%H:%M:%S')
         self.fig.autofmt_xdate()
@@ -166,7 +172,7 @@ class PlotPanel(wx.Panel):
         add(label)
 
         for dtype in dtypes:
-            if dtype != 'times' and dtype != 'bounds':
+            if dtype[0] != '_':
                 cbox = wx.CheckBox(self.controls, label=dtype)
                 if fst:
                     fst = False
@@ -188,8 +194,8 @@ class PlotPanel(wx.Panel):
         ymax = -ymin
         for dtype in self.data.keys():
             if hasattr(self, dtype):
-                ymin = min(ymin, self.data['bounds'][dtype][0])
-                ymax = max(ymax, self.data['bounds'][dtype][1])
+                ymin = min(ymin, self.data['_bounds'][dtype][0])
+                ymax = max(ymax, self.data['_bounds'][dtype][1])
 
         # 1% spacing
         corr = (ymax - ymin)/100
@@ -222,7 +228,19 @@ class PlotPanel(wx.Panel):
 
 
     def plot(self, which):
-        line = self.axes.plot(self.data['times'], self.data[which])[0]
+        x = self.data['_times']
+        y = self.data[which]
+        t = self.data['_time_bounds'][which]
+
+        if t != x[0]:
+            logging.warning('Data type %s appeared later' % which)
+            start = x.index(self.data['_time_bounds'][which])
+            x = x[start:]
+
+        if len(y) != len(x):
+            x = x[:len(y)]
+
+        line = self.axes.plot(x,y)[0]
 #            marker='|', markerfacecolor='red')[0]
         setattr(self, which, line)
         self.redraw()
@@ -239,6 +257,11 @@ class PlotPanel(wx.Panel):
         self.fig.legends = []
         if len(handles) != 0:
             self.fig.legend(handles, dtypes, 'right')
+
+        # update tick style
+        allticks = self.axes.xaxis.get_ticklines() + self.axes.yaxis.get_ticklines()
+        for line in allticks:
+            line.set_color('gray')
         # redraw
         self.canvas.draw()
 

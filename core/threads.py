@@ -153,37 +153,58 @@ class LoadThread(WxThread):
         header = fh.readline()
         red = float(len(header))
 
-        header = header.split()
+        header = header.split()[1:]
         # stamp lpeak rpeak lrms rrms ..BANDS..
         times = []
         data = {}
         mappings = {}
         bounds = {}
+        time_bounds = {}
         for index, data_type in enumerate(header[1:]):
             logging.debug('Found data type: %s' % data_type)
             mappings[index] = data_type
             data[data_type] = []
             bounds[data_type] = (9999999, -9999999)
+            time_bounds[data_type] = None
 
         while True:
             line = fh.readline()
             if not line:
                 fh.close()
                 break
+
             red += len(line)
             if self._want_abort == 1:
                 self.result(None)
                 return
 
             data_row = line.split()
-            times.append(
-                datetime.datetime.fromtimestamp(float(data_row.pop(0))))
+
+            if line[0] == '#':
+                # new header - update mappings, add new bands
+                logging.debug('Header update')
+                mappings = {}
+                for index, data_type in enumerate(data_row[2:]):
+                    logging.debug('Found data type: %s' % data_type)
+                    mappings[index] = data_type
+                    if data_type not in data:
+                        logging.debug('Found new data type: %s' % data_type)
+                        data[data_type] = []
+                        bounds[data_type] = (9999999, -9999999)
+                        time_bounds[data_type] = None
+                continue
+
+            dt = datetime.datetime.fromtimestamp(float(data_row.pop(0)))
+            times.append(dt)
             for index, data_val in enumerate(data_row):
                 val = float(data_val)
                 data[mappings[index]].append(val)
                 dtmin = min(val, bounds[mappings[index]][0])
                 dtmax = max(val, bounds[mappings[index]][1])
                 bounds[mappings[index]] = (dtmin, dtmax)
+                if time_bounds[mappings[index]] is None:
+                    time_bounds[mappings[index]] = dt
+
 
 
             perc = red/size
@@ -195,8 +216,15 @@ class LoadThread(WxThread):
         if self.progress_fn is not None:
             self.progress_fn(red, size, 1)
         logging.debug('Load done')
-        data['times'] = times
-        data['bounds'] = bounds
+        
+        for dtype, tb in time_bounds.iteritems():
+            if tb is None:
+                assert len(data[dtype]) == 0
+                del data[dtype]
+
+        data['_times'] = times
+        data['_bounds'] = bounds
+        data['_time_bounds'] = time_bounds
         self.result(data)
         return
 
