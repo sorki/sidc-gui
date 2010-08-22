@@ -53,25 +53,32 @@ class LoadPanel(wx.Panel):
 
     def on_cancel(self, event=None):
         self.thread_load.abort()
-        self.parent.DeletePage(self.parent.GetSelection())
+        wx.CallAfter( self.parent.DeletePage, self.parent.GetSelection())
 
     def on_load_result(self, event=None): 
         logging.debug('Load result')
         if event.data is None:
             logging.debug('Load failure')
-            # TODO (normal): handle failure
-            pass
+            # TODO (minor): inform user via dialog
+            dial = wx.MessageDialog(self, 'Error loading file, check console',
+                'Error', wx.OK | wx.ICON_ERROR)
+            dial.ShowModal()
+            dial.Destroy()
+
+            self.on_cancel()
         else:
             # plot
-            logging.debug('Data loaded, plotting')
+            logging.info('Data loaded, plotting')
             self.plot(event.data)
             self.thread_load = None
 
     def plot(self, data):
         xrc.get('load_progress', self).Hide()
         chart = xrc.get('chart_panel', self)
-        # TODO (major): parse date from filename according to config or guess format
-        title = os.path.basename(self.filepath)
+        if data['_times'] != []:
+            title = data['_times'][int(len(data['_times'])/2)].strftime('%d %b %Y')
+        else:
+            title = os.path.basename(self.filepath)
         self.plot = PlotPanel(chart, data, title)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -125,27 +132,20 @@ class PlotPanel(wx.Panel):
         self.axes.grid(True, color='gray')
 
         self.axes.set_title(self.title, size=12)
-        self.axes.set_xlabel('Time', labelpad=20)
-        # TODO (major): dB???
-        self.axes.set_ylabel('Signal strength', labelpad=20)
+        self.axes.set_xlabel('Time [GMT]', labelpad=20)
+        self.axes.set_ylabel('Signal strength [dB]', labelpad=20)
 
 
         def format_date(x, pos=None):
             dt = dates.num2date(x)
-            main = dt.strftime('%H:%M:%S.')#dates.DateFormatter('%H:%M:%S:%f'))
+            main = dt.strftime('%H:%M:%S.')
             zeros_missing = 6-len(str(dt.microsecond))
             flo = float(".%s%d" % (zeros_missing*"0", dt.microsecond))
             return main + ('%.03f' % round(flo,3))[2:]
 
         self.axes.xaxis.set_major_locator(ticker.LinearLocator())
         self.axes.xaxis.set_major_formatter(ticker.FuncFormatter(format_date))
-        #self.axes.xaxis.set_minor_locator(ticker.LinearLocator())
-#        self.axes.yaxis.set_major_locator(ticker.MultipleLocator(1))
-#        self.axes.yaxis.set_minor_locator(ticker.MultipleLocator(.5))
         self.axes.yaxis.set_major_locator(ticker.AutoLocator())
-#        self.axes.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        #self.axes.yaxis.set_minor_locator(ticker.MultipleLocator(dx_minor))
-
         # unused
         #self.axes.format_xdata = dates.DateFormatter('%H:%M:%S')
         self.fig.autofmt_xdate()
