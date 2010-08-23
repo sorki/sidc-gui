@@ -36,7 +36,6 @@ class LoadPanel(wx.Panel):
         self.parent = parent
         # Init panel controls
 
-        # TODO (minor): maybe redundant if there's only cancel
         def bind_btn(btnid, fn):
             self.Bind(wx.EVT_BUTTON, fn, id=xrc.get(btnid))
         
@@ -59,12 +58,10 @@ class LoadPanel(wx.Panel):
         logging.debug('Load result')
         if event.data is None:
             logging.debug('Load failure')
-            # TODO (minor): inform user via dialog
             dial = wx.MessageDialog(self, 'Error loading file, check console',
                 'Error', wx.OK | wx.ICON_ERROR)
             dial.ShowModal()
             dial.Destroy()
-
             self.on_cancel()
         else:
             # plot

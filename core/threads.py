@@ -149,9 +149,18 @@ class LoadThread(WxThread):
         resolution = self.progress_resolution
         step = 1
         logging.debug('File size: %d b' % size)
-        # TODO (minor): file header is optional, support?
         header = fh.readline()
         red = float(len(header))
+
+        if red == 0:
+            logging.error('Empty file')
+            self.result(None)
+            return
+
+        if header[0] != '#':
+            logging.error('No file-without-header support')
+            self.result(None)
+            return
 
         header = header.split()[1:]
         # stamp lpeak rpeak lrms rrms ..BANDS..
