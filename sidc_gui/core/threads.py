@@ -139,6 +139,11 @@ class LoadThread(WxThread):
 
     def run(self):
         logging.info('Loading %s' % self.filename)
+        if not os.path.isfile(self.filename):
+            logging.error('File not found %s', self.filename)
+            self.result(None)
+            return
+
         if not os.access(self.filename, os.R_OK):
             logging.error('Not enough permissions to read %s', self.filename)
             self.result(None)
