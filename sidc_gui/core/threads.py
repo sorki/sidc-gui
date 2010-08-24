@@ -80,6 +80,7 @@ class InfoThread(WxThread):
             logging.debug('Default sidc config file found')
 
         # custom location
+        # TODO (minor): this doesn't handle sidc symlink
         cmdline = ' '.join(sidc_status['cmdline'])
         find_result = cmdline.find('sidc ')
         if find_result != -1:

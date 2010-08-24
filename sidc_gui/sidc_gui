@@ -21,9 +21,10 @@ import wx
 # application core
 from core.handler import WxLogger
 # TODO (minor): let Status panel use info thread
-from core.threads import InfoThread
+from core.conf import settings
 from core.utils import xrc
 from core.utils.functional import paply
+from core.threads import InfoThread
 from core.elements import build_tab
 
 class SidcUI(wx.App):
@@ -87,14 +88,17 @@ class SidcUI(wx.App):
         return True
 
     def on_exit(self, event=None):
+        settings.save()
         self.frame.Close(True)
 
     def on_load(self, event=None):
-        dlg = wx.FileDialog(self.frame, "Open a file", style=wx.OPEN)
+        dlg = wx.FileDialog(self.frame, "Open a file", style=wx.OPEN,
+            defaultDir=settings.last_data_path)
         dlg.SetWildcard("Sidc data files (.dat)|*.dat|All files (*.*)|*.*")
         if dlg.ShowModal() == wx.ID_OK:
             self.ts.AddPage(build_tab(self.ts, dlg.GetPath()),
                 os.path.basename(dlg.GetPath()), True)
+            settings.last_data_path = os.path.dirname(dlg.GetPath())
         dlg.Destroy()
 
     def run_info_thread(self, event=None):
@@ -117,6 +121,8 @@ class SidcUI(wx.App):
 
             self.cfg_list.SetColumnWidth(0, -1)
             self.cfg_list.SetColumnWidth(1, -1)
+            if settings.last_data_path == os.path.expanduser('~'):
+                settings.last_data_path = self.config['datadir']
 
         if self.status is not None:
             self.get('status_c').SetLabel('Running')
