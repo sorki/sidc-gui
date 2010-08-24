@@ -7,6 +7,7 @@ Features:
 ----------
  - `sidc <http://github.com/sorki/sidc>`_ data plotting
  - query running sidc instance info
+ - live plot
 
 Requirements:
 --------------
