@@ -1,12 +1,14 @@
 import os
 import wx
 import time
+import pytz
 import psutil
 import logging
 import datetime
 import threading
 
 EVT_RESULT_ID = wx.NewId()
+GMT = pytz.timezone('GMT')
 
 class ResultEvent(wx.PyEvent):
     ''' Event to carry arbitrary payload '''
@@ -212,7 +214,8 @@ class LoadThread(WxThread):
                 continue
 
             try:
-                dt = datetime.datetime.fromtimestamp(float(data_row.pop(0)))
+                dt = datetime.datetime.fromtimestamp(float(data_row.pop(0)),
+                    tz=GMT)
                 times.append(dt)
                 for index, data_val in enumerate(data_row):
                     val = float(data_val)
@@ -303,7 +306,8 @@ class UpdateThread(WxThread):
                         continue
 
                     try:
-                        dt = datetime.datetime.fromtimestamp(float(data_row.pop(0)))
+                        dt = datetime.datetime.fromtimestamp(
+                            float(data_row.pop(0)), tz=GMT)
                         times.append(dt)
                         for index, data_val in enumerate(data_row):
                             val = float(data_val)
