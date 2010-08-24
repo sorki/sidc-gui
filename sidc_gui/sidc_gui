@@ -10,7 +10,6 @@ from logging import config as logging_cfg
 logging_cfg.fileConfig('logging.conf')
 logging.debug('Entry')
 
-
 # matplotlib + wx
 import matplotlib
 matplotlib.use('WXAgg')
@@ -19,13 +18,13 @@ wxversion.ensureMinimal('2.8')
 import wx
 
 # application core
-from core.handler import WxLogger
-# TODO (minor): let Status panel use info thread
 from core.conf import settings
 from core.utils import xrc
 from core.utils.functional import paply
+from core.handler import WxLogger
 from core.threads import InfoThread
 from core.elements import build_tab
+
 
 class SidcUI(wx.App):
     def OnInit(self):
@@ -143,9 +142,6 @@ class SidcUI(wx.App):
             self.get('start_c').SetLabel('')
 
         self.p_status.Show()
-
-
-
 
     def on_cfg_list_click(self, event=None):
         key = event.GetItem().GetText().strip()

@@ -1,6 +1,4 @@
-TODO (major): config loading http://docs.python.org/library/configparser.html
 TODO (minor): screenshots
-TODO (major): recently used path in loadfile dialog
 TODO (major): live data
 TODO (normal): GCN parse & annotate
 TODO (normal): installation -> INSTALL
