@@ -73,6 +73,7 @@ class LoadPanel(wx.Panel):
             logging.info('Data loaded, plotting')
             self.plot(event.data)
 
+            # TODO (normal): start update only for files where it makes sense
             self.thread_update = UpdateThread(self, self.on_update, False)
             self.thread_update.configure(self.filepath, 
                 event.data['_last_red'], event.data['_last_mappings'],
