@@ -81,9 +81,6 @@ class SidcUI(wx.App):
         logging.debug('Starting info thread')
         self.run_info_thread()
 
-        self.ts.AddPage(build_tab(self.ts, './s.dat'),
-            's.dat', True)
-
         logging.debug('Init done')
         return True
 
