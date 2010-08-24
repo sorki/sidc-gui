@@ -4,7 +4,7 @@ import logging
 
 from utils import xrc
 from utils.functional import paply
-from threads import LoadThread
+from threads import LoadThread, UpdateThread
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
@@ -50,6 +50,8 @@ class LoadPanel(wx.Panel):
         self.thread_load.configure(filepath, fn)
         self.thread_load.start()
 
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.on_destroy)
+
     def on_cancel(self, event=None):
         self.thread_load.abort()
         wx.CallAfter( self.parent.DeletePage, self.parent.GetSelection())
@@ -67,7 +69,40 @@ class LoadPanel(wx.Panel):
             # plot
             logging.info('Data loaded, plotting')
             self.plot(event.data)
-            self.thread_load = None
+
+            self.thread_update = UpdateThread(self, self.on_update, False)
+            self.thread_update.configure(self.filepath, 
+                event.data['_last_red'], event.data['_last_mappings'],
+                event.data['_bounds'], event.data['_time_bounds'])
+            self.thread_update.start()
+
+    def on_update(self, event=None):
+        # event.data = data to be merged with current plot data
+        self.plot.data['_bounds'] = event.data.pop('_bounds')
+        self.plot.data['_time_bounds'] = event.data.pop('_time_bounds')
+        self.plot.data['_times'] += event.data.pop('_times')
+
+        for dtype,value in event.data.iteritems():
+            self.plot.data[dtype] += value
+
+            if hasattr(self.plot, dtype):
+                line = getattr(self.plot, dtype)
+                for index, _line in enumerate(self.plot.axes.lines):
+                    if _line == line:
+                        break
+
+                self.plot.axes.lines[index].set_xdata(self.plot.data['_times'])
+                self.plot.axes.lines[index].set_ydata(self.plot.data[dtype])
+        self.plot.redraw()
+
+    def on_destroy(self, event=None):
+        '''
+            End our threads gracefully
+        '''
+        if hasattr(self, 'thread_load') and self.thread_load is not None:
+            self.thread_load.abort()
+        if hasattr(self, 'thread_update') and self.thread_update is not None:
+            self.thread_update.abort()
 
     def plot(self, data):
         xrc.get('load_progress', self).Hide()

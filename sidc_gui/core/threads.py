@@ -1,5 +1,6 @@
 import os
 import wx
+import time
 import psutil
 import logging
 import datetime
@@ -31,7 +32,8 @@ class WxThread(threading.Thread):
         raise NotImplemented
 
     def result(self, data=(None,None)):
-        wx.PostEvent(self._notify_window, ResultEvent(data))
+        if self._want_abort == 0:
+            wx.PostEvent(self._notify_window, ResultEvent(data))
 
     def abort(self):
         self._want_abort = 1
@@ -176,7 +178,6 @@ class LoadThread(WxThread):
         bounds = {}
         time_bounds = {}
         for index, data_type in enumerate(header[1:]):
-            #logging.debug('Found data type: %s' % data_type)
             mappings[index] = data_type
             data[data_type] = []
             bounds[data_type] = (9999999, -9999999)
@@ -185,6 +186,7 @@ class LoadThread(WxThread):
         while True:
             line = fh.readline()
             if not line:
+                last_red = fh.tell()
                 fh.close()
                 break
 
@@ -224,8 +226,6 @@ class LoadThread(WxThread):
                 logging.warning('Bad lines in data file')
                 continue
 
-
-
             perc = red/size
             if(perc>resolution*step):
                 step += 1
@@ -250,9 +250,79 @@ class LoadThread(WxThread):
         data['_times'] = times
         data['_bounds'] = bounds
         data['_time_bounds'] = time_bounds
+        data['_last_red'] = last_red
+        data['_last_mappings'] = mappings
         self.result(data)
         return
 
     def default_progress_fn(self, red, total, perc, wxgauge=None):
         if wxgauge is not None:
             wx.CallAfter(wxgauge.SetValue, int(perc*100))
+
+class UpdateThread(WxThread):
+    def configure(self, filepath, already_red, mappings, bounds, time_bounds):
+        self.filepath = filepath
+        self.pointer = already_red
+        self.mappings = mappings
+        self.bounds = bounds
+        self.time_bounds = time_bounds
+
+    def run(self):
+        self.file = open(self.filepath)
+        self.file.seek(self.pointer)
+
+
+        while True:
+            if self._want_abort == 1:
+                return
+
+            new_lines = self.file.read().splitlines()
+
+            if new_lines != []:
+                data = {}
+                times = []
+                for dtype in self.mappings.values():
+                    data[dtype] = []
+
+                for line in new_lines:
+                    data_row = line.split()
+                    if len(data_row) == 0:
+                        continue
+
+                    if line[0] == '#':
+                        # new header - update mappings, add new bands
+                        logging.debug('Header update')
+                        mappings = {}
+                        for index, data_type in enumerate(data_row[2:]):
+                            self.mappings[index] = data_type
+                            if data_type not in data:
+                                logging.debug('Found new data type: %s' % data_type)
+                                data[data_type] = []
+                                self.bounds[data_type] = (9999999, -9999999)
+                                self.time_bounds[data_type] = None
+                        continue
+
+                    try:
+                        dt = datetime.datetime.fromtimestamp(float(data_row.pop(0)))
+                        times.append(dt)
+                        for index, data_val in enumerate(data_row):
+                            val = float(data_val)
+                            data[self.mappings[index]].append(val)
+                            dtmin = min(val, self.bounds[self.mappings[index]][0])
+                            dtmax = max(val, self.bounds[self.mappings[index]][1])
+                            self.bounds[self.mappings[index]] = (dtmin, dtmax)
+                            if self.time_bounds[self.mappings[index]] is None:
+                                self.time_bounds[self.mappings[index]] = dt
+                    except ValueError:
+                        logging.warning('Bad lines in data file')
+                        continue
+
+                data['_times'] = times
+                data['_bounds'] = self.bounds
+                data['_time_bounds'] = self.time_bounds
+                self.result(data)
+
+            self.filepointer = self.file.tell()
+            time.sleep(1)
+
+        self.file.close()
