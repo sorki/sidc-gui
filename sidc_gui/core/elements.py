@@ -1,17 +1,20 @@
 import os
 import wx
 import logging
+from datetime import timedelta
 
-from utils import xrc
-from utils.functional import paply
-from threads import LoadThread, UpdateThread
-
+# matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
 import matplotlib.dates as dates
 import matplotlib.ticker as ticker
+
+# app core
+from utils import xrc
+from utils.functional import paply
+from threads import LoadThread, UpdateThread
 
 
 def build_tab(parent, filepath):
@@ -93,6 +96,17 @@ class LoadPanel(wx.Panel):
 
                 self.plot.axes.lines[index].set_xdata(self.plot.data['_times'])
                 self.plot.axes.lines[index].set_ydata(self.plot.data[dtype])
+
+        live_mode = self.plot.controls.live_mode.GetSelection()
+        xmax = self.plot.data['_times'][-1]
+        if live_mode == 1:    #follow
+            # TODO (normal): configurable live window size
+            xmin = xmax - timedelta(minutes=10)
+            self.plot.axes.set_xbound(lower=xmin, upper=xmax)
+        elif live_mode == 2:  # scale x
+            xmin = self.plot.data['_times'][0]
+            self.plot.axes.set_xbound(lower=xmin, upper=xmax)
+
         self.plot.redraw()
 
     def on_destroy(self, event=None):
@@ -219,6 +233,16 @@ class PlotPanel(wx.Panel):
         auto = wx.CheckBox(self.controls, label='Autoscale')
         add_cb(auto)
         self.Bind(wx.EVT_CHECKBOX, self.on_autoscale, auto)
+
+        live_label = wx.StaticText(self.controls, label='Live mode:')
+        choices = ['Update', 'Follow', 'Scale x']
+        live_mode = wx.Choice(self.controls, -1, choices=choices)
+
+        self.controls.live_mode = live_mode
+
+        add(live_label)
+        add(live_mode)
+
         self.controls.SetSizer(csizer)
 
     def rescale(self, event=None):
