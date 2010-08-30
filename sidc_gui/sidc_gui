@@ -40,6 +40,7 @@ class SidcUI(wx.App):
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler = WxLogger(self.get('console_textarea'))
         handler.setFormatter(formatter)
+        handler.setLevel(int(settings.con_log_level))
         logging.getLogger().addHandler(handler)
 
         logging.debug('wx Logger set')
@@ -139,7 +140,7 @@ class SidcUI(wx.App):
                 fname = datetime.datetime.now(pytz.timezone('GMT')).strftime(
                     self.config['output_files'])
                 fpath = os.path.join(self.config['datadir'], fname)
-                logging.info('Trying to open current file [%s]' % fpath)
+                logging.info('Trying to open live file [%s]' % fpath)
                 if os.path.isfile(fpath):
                     logging.info('File found')
                     self.ts.AddPage(build_tab(self.ts, fpath), fname, True)
