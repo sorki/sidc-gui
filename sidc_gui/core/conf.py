@@ -21,7 +21,7 @@ class Config(object):
 
         self._config = config
         for item in config.options('config'):
-            setattr(self, item, config.get('config', item))
+            setattr(self, item, config.get('config', item).strip())
         return
 
     def save(self):
