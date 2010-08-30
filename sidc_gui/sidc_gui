@@ -16,6 +16,7 @@ matplotlib.use('WXAgg')
 import wxversion
 wxversion.ensureMinimal('2.8')
 import wx
+import pytz
 
 # application core
 from core.conf import settings
@@ -119,6 +120,7 @@ class SidcUI(wx.App):
                 settings.last_data_path = self.config['datadir']
 
         if self.status is not None:
+            logging.debug(self.status)
             self.get('status_c').SetLabel('Running')
             started = self.status['create_datetime']
             uptime = datetime.datetime.now() - started
@@ -133,6 +135,16 @@ class SidcUI(wx.App):
 
             self.get('uptime_c').SetLabel(uptime_fmt)
             self.get('start_c').SetLabel(started.strftime(DATETIME_FORMAT))
+            if 'datadir' in self.config:
+                fname = datetime.datetime.now(pytz.timezone('GMT')).strftime(
+                    self.config['output_files'])
+                fpath = os.path.join(self.config['datadir'], fname)
+                logging.info('Trying to open current file [%s]' % fpath)
+                if os.path.isfile(fpath):
+                    logging.info('File found')
+                    self.ts.AddPage(build_tab(self.ts, fpath), fname, True)
+                else:
+                    logging.error('File not found, please fire a bug report')
 
         else:
             self.get('status_c').SetLabel('Not running')
