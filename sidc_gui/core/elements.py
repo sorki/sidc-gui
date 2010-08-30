@@ -58,7 +58,7 @@ class LoadPanel(wx.Panel):
 
     def on_cancel(self, event=None):
         self.thread_load.abort()
-        wx.CallAfter( self.parent.DeletePage, self.parent.GetSelection())
+        wx.CallAfter(self.parent.DeletePage, self.parent.GetSelection())
 
     def on_load_result(self, event=None): 
         logging.debug('Load result')
@@ -126,7 +126,7 @@ class LoadPanel(wx.Panel):
             title = data['_times'][int(len(data['_times'])/2)].strftime('%d %b %Y')
         else:
             title = os.path.basename(self.filepath)
-        self.plot = PlotPanel(chart, data, title)
+        self.plot = PlotPanel(chart, data, title, self)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.plot, 1, wx.EXPAND)
@@ -137,8 +137,10 @@ class LoadPanel(wx.Panel):
 
 
 class PlotPanel(wx.Panel):
-    def __init__(self, parent, data, title):
+    def __init__(self, parent, data, title, page):
         wx.Panel.__init__(self, parent, -1)
+
+        self.parent = page
 
         self.data = data
         self.title = title
@@ -216,6 +218,10 @@ class PlotPanel(wx.Panel):
         fst = True
         add = paply(csizer.Add, border=5, flag=wx.ALL)
         add_cb = paply(csizer.Add, border=5, flag=wx.LEFT|wx.RIGHT)
+
+        btn = wx.Button(self.controls, -1, label='Close file')
+        add(btn)
+        self.Bind(wx.EVT_BUTTON, self.parent.on_cancel, btn)
 
         label = wx.StaticText(self.controls, label='Bands:')
         add(label)
