@@ -7,7 +7,7 @@ import os
 import datetime
 import logging
 from logging import config as logging_cfg
-logging_cfg.fileConfig('logging.conf')
+logging_cfg.fileConfig(os.path.join(os.path.dirname(__file__), 'logging.conf'))
 logging.debug('Entry')
 
 # matplotlib + wx
@@ -29,7 +29,7 @@ from core.elements import build_tab
 class SidcUI(wx.App):
     def OnInit(self):
         logging.debug('wx Init')
-        xrc_file = 'xrc/app.xrc'
+        xrc_file = 'app.xrc'
 
         self.res = xrc.load(xrc_file)
 

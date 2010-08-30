@@ -18,7 +18,7 @@ from threads import LoadThread, UpdateThread
 
 
 def build_tab(parent, filepath):
-    res = xrc.load('xrc/load_panel.xrc')
+    res = xrc.load('load_panel.xrc')
 
     panel = res.LoadPanel(parent, 'Loaded')
     assert isinstance(panel, wx.Panel)
