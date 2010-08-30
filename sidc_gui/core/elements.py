@@ -14,6 +14,7 @@ import matplotlib.ticker as ticker
 # app core
 from utils import xrc
 from utils.functional import paply
+from conf import settings
 from threads import LoadThread, UpdateThread
 
 
@@ -175,13 +176,15 @@ class PlotPanel(wx.Panel):
 
     def init_plot(self):
         self.axes = self.fig.add_subplot(111)
-        self.axes.set_axis_bgcolor('black')
-        self.axes.grid(True, color='gray')
 
         self.axes.set_title(self.title, size=12)
         self.axes.set_xlabel('Time [GMT]', labelpad=20)
         self.axes.set_ylabel('Signal strength [dB]', labelpad=20)
 
+        clist = settings.plot_color_cycle.split(' ')
+        self.axes.set_color_cycle(clist)
+        self.axes.grid(True, color=settings.plot_grid_color)
+        self.axes.set_axis_bgcolor(settings.plot_bg_color)
 
         def format_date(x, pos=None):
             dt = dates.num2date(x)

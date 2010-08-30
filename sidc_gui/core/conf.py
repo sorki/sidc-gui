@@ -5,6 +5,11 @@ import ConfigParser
 defaults = '''
 [config]
 last_data_path = %s
+
+; valid color names - all html color names (http://www.w3schools.com/HTML/html_colornames.asp)
+plot_color_cycle = blue green red cyan magenta yellow gray pink brown
+plot_bg_color = black
+plot_grid_color = gray
 ''' % os.path.expanduser('~')
 
 class Config(object):
