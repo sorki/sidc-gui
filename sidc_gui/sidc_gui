@@ -29,9 +29,7 @@ from core.elements import build_tab
 class SidcUI(wx.App):
     def OnInit(self):
         logging.debug('wx Init')
-        xrc_file = 'app.xrc'
-
-        self.res = xrc.load(xrc_file)
+        self.res = xrc.load('app.xrc')
 
         self.frame = self.res.LoadFrame(None, 'main_frame')
         self.frame.Show(True)
