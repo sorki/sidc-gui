@@ -44,6 +44,7 @@ setup(name=NAME,
         license='BSD',
         package_dir={'sidc_gui': 'sidc_gui'},
         packages=packages,
+        scripts=['sidc_gui/sidc_gui'],
         package_data={'sidc_gui': data_files},
 
         classifiers=['Development Status :: 4 - Beta',
