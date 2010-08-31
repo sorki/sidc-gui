@@ -1,5 +1,5 @@
-sidc-gui 0.2
-============
+sidc-gui
+=========
 
 Sudden ionospheric disturbance colletor (sidc) GUI.
 
