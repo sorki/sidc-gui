@@ -7,6 +7,8 @@ import logging
 import datetime
 import threading
 
+from conf import settings
+
 EVT_RESULT_ID = wx.NewId()
 GMT = pytz.timezone('GMT')
 
@@ -274,6 +276,7 @@ class UpdateThread(WxThread):
         self.file = open(self.filepath)
         self.file.seek(self.pointer)
 
+        interval = int(settings.update_interval)
 
         while True:
             if self._want_abort == 1:
@@ -327,6 +330,6 @@ class UpdateThread(WxThread):
                 self.result(data)
 
             self.filepointer = self.file.tell()
-            time.sleep(1)
+            time.sleep(interval)
 
         self.file.close()

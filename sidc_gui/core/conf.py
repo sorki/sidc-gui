@@ -6,6 +6,7 @@ defaults = '''
 [config]
 con_log_level = 20
 last_data_path = %s
+update_interval = 2
 
 ; valid color names - all html color names (http://www.w3schools.com/HTML/html_colornames.asp)
 plot_color_cycle = blue green red cyan magenta yellow gray pink brown
