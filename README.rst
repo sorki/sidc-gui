@@ -1,5 +1,5 @@
-sidc-gui
-=========
+sidc-gui 0.2
+============
 
 Sudden ionospheric disturbance colletor (sidc) GUI.
 
@@ -17,3 +17,9 @@ Requirements:
  - matplotlib 0.99.1.1
 
  Note: version numbers are just informative, sidc-gui should work fine with latest versions of the requirements.
+
+Installation:
+--------------
+ - install sidc-gui (`easy_install sidc-gui` or `pip install sidc-gui`)
+ - install requirements
+ - run `sidc_gui`
