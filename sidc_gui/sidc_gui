@@ -20,6 +20,7 @@ import pytz
 
 # application core
 from core.conf import settings
+from core.about import about_box
 from core.utils import xrc
 from core.utils.functional import paply
 from core.handler import WxLogger
@@ -60,6 +61,7 @@ class SidcUI(wx.App):
         bind_menu('load', self.on_load)
         bind_menu('config', paply(self.toggle, self.p_config))
         bind_menu('console', paply(self.toggle, self.p_console))
+        bind_menu('about', about_box)
 
         self.frame.GetMenuBar().Check(self.getid('menu_console'), True)
         self.frame.GetMenuBar().Check(self.getid('menu_config'), False)
