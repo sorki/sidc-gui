@@ -3,5 +3,5 @@ include README.rst
 include MANIFEST.in
 include LICENSE
 include sidc_gui/sidc_gui
-include sidc_gui/logging.conf
+include sidc_gui/core/logging.conf
 recursive-include sidc_gui/xrc *

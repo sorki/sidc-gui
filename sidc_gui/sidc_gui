@@ -6,9 +6,6 @@ DATETIME_FORMAT = '%a %d %B %Y %H:%M:%S %Z'
 import os
 import datetime
 import logging
-from logging import config as logging_cfg
-logging_cfg.fileConfig(os.path.join(os.path.dirname(__file__), 'logging.conf'))
-logging.debug('Entry')
 
 # matplotlib + wx
 import matplotlib
@@ -19,14 +16,15 @@ import wx
 import pytz
 
 # application core
-from core.conf import settings
-from core.about import about_box
-from core.utils import xrc
-from core.utils.functional import paply
-from core.handler import WxLogger
-from core.threads import InfoThread
-from core.elements import build_tab
+from sidc_gui.core.conf import settings
+from sidc_gui.core.about import about_box
+from sidc_gui.core.utils import xrc
+from sidc_gui.core.utils.functional import paply
+from sidc_gui.core.handler import WxLogger
+from sidc_gui.core.threads import InfoThread
+from sidc_gui.core.elements import build_tab
 
+logging.debug('Entry')
 
 class SidcUI(wx.App):
     def OnInit(self):

@@ -2,6 +2,10 @@ import os
 import io
 import ConfigParser
 
+# setup logging
+from logging import config as logging_cfg
+logging_cfg.fileConfig(os.path.join(os.path.dirname(__file__), 'logging.conf'))
+
 defaults = '''
 [config]
 con_log_level = 20
