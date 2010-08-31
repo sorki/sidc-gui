@@ -1,0 +1,6 @@
+include CHANGES
+include README.rst
+include MANIFEST.in
+include LICENSE
+include sidc_gui/logging.conf
+recursive-include sidc_gui/xrc *
