@@ -201,8 +201,11 @@ class PlotPanel(wx.Panel):
         #self.axes.format_xdata = dates.DateFormatter('%H:%M:%S')
         self.fig.autofmt_xdate()
 
-
         self.plot(self.first_dtype)
+
+        xmin = self.data['_times'][0]
+        xmax = self.data['_times'][-1]
+        self.axes.set_xbound(lower=xmin, upper=xmax)
 
         self.axes.set_autoscale_on(False)
         self.autoscale = False
@@ -305,8 +308,9 @@ class PlotPanel(wx.Panel):
         if len(y) != len(x):
             x = x[:len(y)]
 
-        line = self.axes.plot(x,y)[0]
+        line = self.axes.plot(x, y, scaley=False)[0]
 #            marker='|', markerfacecolor='red')[0]
+
         setattr(self, which, line)
         self.redraw()
 
