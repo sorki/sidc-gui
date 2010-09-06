@@ -3,8 +3,12 @@ import io
 import ConfigParser
 
 # setup logging
-from logging import config as logging_cfg
-logging_cfg.fileConfig(os.path.join(os.path.dirname(__file__), 'logging.conf'))
+#from logging import config as logging_cfg
+#logging_cfg.fileConfig(os.path.join(os.path.dirname(__file__), 'logging.conf'))
+# TODO (minor): logging configuration via ini config bellow
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 
 defaults = '''
 [config]
