@@ -32,7 +32,7 @@ class SidcUI(wx.App):
         self.res = xrc.load('app.xrc')
 
         self.frame = self.res.LoadFrame(None, 'main_frame')
-        self.frame.Show(True)
+        self.frame.SetMinSize((500,500))
 
         # wx logger
         formatter = logging.Formatter(
@@ -75,6 +75,8 @@ class SidcUI(wx.App):
         self.cfg_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_cfg_list_click)
 
         self.SetTopWindow(self.frame)
+        self.frame.Show(True)
+        self.frame.SetSize((802,603))
 
         logging.debug('wx Init done')
         logging.debug('Starting info thread')

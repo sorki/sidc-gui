@@ -2,7 +2,7 @@
 <resource version="2.3.0.1">
   <object class="wxFrame" name="main_frame">
     <style>wxDEFAULT_FRAME_STYLE</style>
-    <title>frame_1</title>
+    <title>Sidc Gui</title>
     <object class="wxMenuBar" name="menu_bar">
       <object class="wxMenu">
         <label>_File</label>
