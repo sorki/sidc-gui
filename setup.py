@@ -55,5 +55,5 @@ setup(name=NAME,
                    'Topic :: Scientific/Engineering :: Visualization'],
 
 
-    )       
+    )
 
