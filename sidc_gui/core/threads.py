@@ -60,7 +60,7 @@ class InfoThread(WxThread):
 
         sidc_status = {}
         attrs = '''
-            pid path cmdline uid gid username create_time
+            pid cmdline username create_time
             get_cpu_percent get_memory_percent
             '''
 
@@ -85,22 +85,8 @@ class InfoThread(WxThread):
             sidc_status['cfg_file'] = cfg_file
             logging.debug('Default sidc config file found')
 
-        # custom location
-        # TODO (minor): this doesn't handle sidc symlink
-        cmdline = ' '.join(sidc_status['cmdline'])
-        find_result = cmdline.find('sidc ')
-        if find_result != -1:
-            params = cmdline[find_result+5:]
-            pos = params.find('c ')
-            if pos != -1:
-                filename = params[pos+2:].split(' ')[0]
-                cfg_file = os.path.join(sidc_status['path'], filename)
-                if os.path.exists(cfg_file):
-                    sidc_status['cfg_file'] = cfg_file
-                    logging.debug('Custom sidc config file found')
-
         if 'cfg_file' not in sidc_status:
-            logging.warning('Sidc is running but no config file found')
+            logging.warning('Sidc is running but no config file (/etc/sidc.conf) found')
         else:
             if os.access(sidc_status['cfg_file'], os.R_OK):
                 # config ok, read & parse
