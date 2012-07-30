@@ -42,7 +42,7 @@ class WxThread(threading.Thread):
     def abort(self):
         self._want_abort = 1
 
-        
+
 class InfoThread(WxThread):
     def run(self):
         sidc_list = filter(lambda p: p.name == 'sidc', psutil.process_iter())
@@ -232,7 +232,7 @@ class LoadThread(WxThread):
             logging.error('Empty file')
             self.result(None)
             return
-        
+
         for dtype, tb in time_bounds.iteritems():
             if tb is None:
                 assert len(data[dtype]) == 0

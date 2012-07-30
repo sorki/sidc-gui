@@ -34,7 +34,7 @@ class LoadPanel(wx.Panel):
         # create step is handled by XRC
         self.PostCreate(pre)
 
-   
+
     def configure(self, parent, filepath):
         self.filepath = filepath
         self.parent = parent
@@ -42,7 +42,7 @@ class LoadPanel(wx.Panel):
 
         def bind_btn(btnid, fn):
             self.Bind(wx.EVT_BUTTON, fn, id=xrc.get(btnid))
-        
+
         bind_btn('btn_load_cancel', self.on_cancel)
 
         # Start loading thread

@@ -1,4 +1,4 @@
-# wx.xrc utils 
+# wx.xrc utils
 
 import os
 import wx.xrc as xrc
