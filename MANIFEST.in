@@ -1,3 +1,4 @@
+include AUTHORS
 include CHANGES
 include README.rst
 include MANIFEST.in
@@ -5,3 +6,6 @@ include LICENSE
 include sidc_gui/sidc_gui
 include sidc_gui/core/logging.conf
 recursive-include sidc_gui/xrc *
+
+include sidc_gui.svg
+include sidc_gui.desktop

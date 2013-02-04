@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Sidc GUI
+Comment=Sudden ionspheric disturbance detector GUI
+Exec=sidc_gui
+Icon=sidc_gui
+Terminal=false
+Type=Application
+Categories=Science;
